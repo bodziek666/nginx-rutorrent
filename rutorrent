@@ -1,0 +1,52 @@
+server {
+  listen 443 ssl;
+  server_name domain.example.com;
+  server_tokens off;
+
+  include letsencrypt.conf;
+
+  #  add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+  #  more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains";
+  add_header X-Frame-Options SAMEORIGIN;
+  root /srv/http/rutorrent;
+  index index.html index.htm index.php;
+
+
+  ssl_certificate /etc/letsencrypt/live/domain.example.com/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/domain.example.com/privkey.pem;
+
+  ssl_dhparam /path/to/dhparam.pem;
+
+#  auth_basic "Restricted";
+#  auth_basic_user_file /path/to/.htpasswd;
+
+
+  location / {
+    auth_basic "Restricted";
+    auth_basic_user_file /path/to/.htpasswd;
+    try_files $uri $uri/ =404;
+  }
+
+  location /RPC2 {
+    include scgi_params;
+    scgi_pass 127.0.0.1:5000;
+  }
+
+  location ~ \.php$ {
+    fastcgi_split_path_info ^(.+\.php)(/.+)$;
+    fastcgi_pass unix:/var/run/php5-fpm.sock;
+    fastcgi_index index.php;
+    include fastcgi.conf;
+  }
+}
+
+server {
+  listen 80;
+  server_name domain.example.com;
+  server_tokens off;
+
+  include letsencrypt.conf;
+  location / {
+    return 301 https://$server_name$request_uri;
+  }
+}
